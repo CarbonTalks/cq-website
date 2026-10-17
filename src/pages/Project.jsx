@@ -55,7 +55,7 @@ export default function Project() {
           <h1 className="font-display-lg text-display-lg text-on-surface tracking-tight">{p.name}</h1>
           <div className="flex flex-wrap items-center gap-space-xs font-label-md text-label-md">
             {[t(p.tech), p.capacity ? `${fmt(p.capacity)} MW` : t('Capacity not stated'), p.hasStorage ? t('With storage') : null, p.authority].filter(Boolean).map(x => <span key={x} className="px-2.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-medium">{x}</span>)}
-            <span className="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-mono text-label-xs tracking-wider">REPD {p.id}</span>
+            <span className="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-mono text-label-xs tracking-wider">{ctx.country === 'GB' ? 'REPD' : 'ID'} {p.id}</span>
           </div>
         </div>
         <div className="flex flex-col text-right px-space-xl py-space-md bg-surface-container-low rounded-xl">

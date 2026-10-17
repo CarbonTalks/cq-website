@@ -27,12 +27,16 @@ const json = (method, body) => ({ method, headers: { 'Content-Type': 'applicatio
 
 export const api = {
   liveQueue: () => request('/queue/live'),
+  // Queue of the applications uploaded for one workspace country (same shape as the live queue).
+  countryQueue: country => request(`/queue/country/${encodeURIComponent(country)}`),
   application: id => request(`/applications/${id}`),
   historical: (year, policy) => request(`/simulation/historical/${year}/${policy}`),
-  extract: files => {
+  // country: the workspace country, used when the documents do not name one.
+  extract: (files, country) => {
     const form = new FormData();
     files.forEach(file => form.append('files', file));
-    return request('/applications/extract', { method: 'POST', body: form });
+    const query = country ? `?country=${encodeURIComponent(country)}` : '';
+    return request('/applications/extract' + query, { method: 'POST', body: form });
   },
   correct: (id, revision, values, reason) => request(`/applications/${id}/observations`,
     json('PATCH', { expected_revision: revision, actor: 'dashboard-reviewer', values, reason })),
