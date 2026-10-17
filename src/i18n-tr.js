@@ -243,4 +243,6 @@ export const TR = {
   "The side-by-side order is shown for up to {n} applications; the chart below covers the whole queue.": "Yan yana sıra en fazla {n} başvuru için gösterilir; alttaki grafik tüm kuyruğu kapsar.",
   "Carbon reviewed as the work proceeds": "İş ilerledikçe incelenen karbon",
   "Daily tCO₂e of the projects already reviewed, by reviewer hours spent. Both lines end at the same point: the difference is how early the impact is reached.": "İncelemesi biten projelerin günlük tCO₂e toplamı, harcanan uzman saatine göre. İki çizgi aynı noktada biter; fark, etkiye ne kadar erken ulaşıldığıdır.",
+  "No validated prediction model for this country or project type": "Bu ülke ya da proje türü için doğrulanmış tahmin modeli yok",
+  "No validated model": "Doğrulanmış model yok",
 };
