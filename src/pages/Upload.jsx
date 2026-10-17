@@ -1,8 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../state.jsx';
 import { api } from '../api.js';
 import { LANE_LABELS, fmt, laneReason } from '../live-data.js';
 import { useT } from '../i18n.jsx';
+import { LIVE_COUNTRY, countryName } from '../countries.js';
 
 const FIELD_LABELS = { technology: 'Technology', capacity_mw: 'Capacity (MW)', project_name: 'Project name', planning_authority: 'Planning authority',
   site_location: 'Site location', applicant: 'Applicant', submission_date: 'Submission date', has_storage: 'Storage component',
@@ -34,6 +35,15 @@ function livePlacement(live, app) {
     total: live.files.length + 1, week: (below || above)?.planned_week?.carbonqueue || 1 };
 }
 
+// Outside Great Britain the queue is the uploaded applications themselves: the engine has
+// already ranked this one, so its place is read from the country queue instead of estimated.
+function queuePlacement(queue, own) {
+  const byPosition = [...queue.files].sort((a, b) => a.position.carbonqueue - b.position.carbonqueue);
+  const index = byPosition.findIndex(f => f.application_id === own.application_id);
+  return { exact: true, position: own.position.carbonqueue, total: queue.files.length, lane: own.lane,
+    above: byPosition[index - 1], below: byPosition[index + 1], week: own.planned_week?.carbonqueue || 1 };
+}
+
 function Card({ title, value, note, tone }) {
   return <div className="bg-surface-container-low p-space-md rounded-lg flex flex-col">
     <span className="font-label-xs text-label-xs text-on-surface-variant uppercase tracking-wider">{title}</span>
@@ -53,7 +63,7 @@ export default function Upload() {
 
   async function extract() {
     setPhase('extracting'); setError(null); setApp(null); setEntry(null);
-    try { setApp(await api.extract(files)); setPhase('done'); } catch (e) { fail(e); }
+    try { setApp(await api.extract(files, ctx.country)); setPhase('done'); } catch (e) { fail(e); }
   }
   async function correct(e) {
     e.preventDefault();
@@ -71,7 +81,12 @@ export default function Upload() {
   }
 
   const readiness = app?.readiness, features = app?.project_features;
-  const placement = app?.carbon && livePlacement(ctx.live.status === 'ready' ? ctx.live.data : null, app);
+  const uploaded = ctx.country !== LIVE_COUNTRY;
+  // A scored upload joins its country's queue: reload it to read the engine's place.
+  useEffect(() => { if (uploaded && app?.carbon) ctx.loadLive(); }, [app?.application_id, Boolean(app?.carbon)]);
+  const own = uploaded && app && ctx.live.status === 'ready' ? ctx.live.data.files.find(f => f.application_id === app.application_id) : null;
+  const otherCountry = uploaded && app?.carbon && features?.country && features.country !== ctx.country ? features.country : null;
+  const placement = app?.carbon && (uploaded ? own && queuePlacement(ctx.live.data, own) : livePlacement(ctx.live.status === 'ready' ? ctx.live.data : null, app));
   const docName = Object.fromEntries((app?.documents || []).map(d => [d.document_id, d.filename]));
   // The impact comes from the applicant's own figure only when a claim was used, not when a capacity was.
   const claimBased = readiness?.domain_status === 'CLAIM_BASED' && /beyani/i.test(app?.carbon?.methodology_reference || '');
@@ -150,11 +165,18 @@ export default function Upload() {
             </div>}
             {entry && <p className="font-body-sm text-body-sm text-on-surface"><strong>{t(LANE_LABELS[entry.lane] || entry.lane)}:</strong> {entryReason}</p>}
             {placement && <div className="flex flex-col gap-1 pt-space-sm border-t border-outline-variant/30">
-              <span className="font-label-xs text-label-xs text-on-surface-variant uppercase tracking-wider font-semibold">{t('Place in the live queue')}</span>
-              <span className="font-title-sm text-title-sm text-on-surface">{t('≈ #{p} of {n} · carbon lane {l} of {m} · planned review week {w}', { p: placement.position, n: placement.total, l: placement.lanePosition, m: placement.laneTotal, w: placement.week })}</span>
-              <span className="font-body-sm text-body-sm text-on-surface-variant">{placement.above ? t('After {a}', { a: placement.above.site_name }) : t('First in the carbon lane')}{placement.below ? ' · ' + t('before {b}', { b: placement.below.site_name }) : ''}</span>
-              <span className="font-label-xs text-label-xs text-on-surface-variant">{t('Same score as the queue engine, compared with the live snapshot of {d}; the next queue run confirms the exact place.', { d: ctx.live.data.as_of })}</span>
+              <span className="font-label-xs text-label-xs text-on-surface-variant uppercase tracking-wider font-semibold">{placement.exact ? t('Place in the {c} queue', { c: countryName(ctx.country) }) : t('Place in the live queue')}</span>
+              <span className="font-title-sm text-title-sm text-on-surface">{placement.exact
+                ? t('#{p} of {n} · {lane} · planned review week {w}', { p: placement.position, n: placement.total, lane: t(LANE_LABELS[placement.lane] || placement.lane), w: placement.week })
+                : t('≈ #{p} of {n} · carbon lane {l} of {m} · planned review week {w}', { p: placement.position, n: placement.total, l: placement.lanePosition, m: placement.laneTotal, w: placement.week })}</span>
+              {placement.exact
+                ? <span className="font-body-sm text-body-sm text-on-surface-variant">{placement.above ? t('After {a}', { a: placement.above.site_name }) : t('First in the queue')}{placement.below ? ' · ' + t('before {b}', { b: placement.below.site_name }) : ''}</span>
+                : <span className="font-body-sm text-body-sm text-on-surface-variant">{placement.above ? t('After {a}', { a: placement.above.site_name }) : t('First in the carbon lane')}{placement.below ? ' · ' + t('before {b}', { b: placement.below.site_name }) : ''}</span>}
+              <span className="font-label-xs text-label-xs text-on-surface-variant">{placement.exact
+                ? t('Ranked by the queue engine together with the other applications uploaded for {c}.', { c: countryName(ctx.country) })
+                : t('Same score as the queue engine, compared with the live snapshot of {d}; the next queue run confirms the exact place.', { d: ctx.live.data.as_of })}</span>
             </div>}
+            {otherCountry && <p className="font-body-sm text-body-sm text-on-surface-variant pt-space-sm border-t border-outline-variant/30">{t('The documents place this project in {c}, so it is ranked in the {c} queue, not in this workspace.', { c: countryName(otherCountry) })}</p>}
           </div>}
         </>}
       </div>

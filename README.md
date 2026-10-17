@@ -28,13 +28,20 @@ Dashboard verilerini cq-backend'den okur; örnek veri içermez.
 
 | Sayfa | Veri kaynağı |
 |---|---|
-| `#/queue` | `GET /queue/live` (cq-sim canlı kuyruğu, 765 sıralı başvuru). Politika seçici: FIFO / Carbon only / CarbonQueue; oklar FIFO'ya göre sıra değişimi. Üstteki KPI'lar 2023 geçmiş simülasyonundan. CSV dışa aktarma filtrelenmiş kuyruğu verir |
+| `#/queue` | `GET /queue/live` (cq-sim canlı kuyruğu, 765 sıralı başvuru). Politika seçici: FIFO / Carbon only / CarbonQueue; oklar FIFO'ya göre sıra değişimi (değişmeyen satırda soluk "= FIFO"). Üstteki KPI'lar 2023 geçmiş simülasyonundan. CSV dışa aktarma filtrelenmiş kuyruğu verir |
 | `#/project` | Seçilen kuyruk kaydı + `GET /applications/{id}` (eksik alanlar, çakışmalar, model kapsamı) |
 | `#/upload` | `POST /applications/extract` (agent: belge, sayfa, alıntı), eksik alan için `PATCH /applications/{id}/observations`, skorlama için `POST /queue/run` |
 | `#/results` | Planlanan iş yükü: canlı kuyruğun haftalara dağılımı. Geçmiş analiz: `GET /simulation/historical/{yıl}/{politika}`, 2019–2023, beş politika |
 | `#/methodology`, `#/settings` | Yöntem, kaynaklar, sınırlamalar; bağlantı durumu |
 
 Uzman ekranlarında gerçekleşme olasılığı gibi alanlar gösterilmez; backend bunları zaten sunmuyor.
+
+## Çalışma ülkesi
+
+İlk açılışta "CarbonQueue'yu hangi ülke için kullanacaksınız?" sorulur; seçim tarayıcıda saklanır, Ayarlar'dan ve üst çubuktaki ülke düğmesinden değiştirilir. Liste, cq-sim'de şebeke emisyon faktörü olan 228 ülke (adlar tarayıcıdan, arayüz dilinde).
+
+- **Birleşik Krallık:** `GET /queue/live`, İngiltere'nin REPD canlı kuyruğu.
+- **Diğer ülkeler:** `GET /queue/country/{iso2}`. Kuyruk boş başlar, o ülke için yüklenen başvurularla dolar; sıralamayı aynı kuyruk motoru üç politikayla yapar. Yüklemede ülke `?country=` olarak gönderilir; belgede başka bir ülke yazıyorsa belge geçerlidir. Yükleme sayfası yeni başvurunun o ülke kuyruğundaki kesin yerini gösterir. Geçmiş simülasyon kartları İngiltere 2023 olarak etiketlenir.
 
 ## Dil
 
