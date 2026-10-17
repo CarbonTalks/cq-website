@@ -6,7 +6,7 @@ import { useT } from '../i18n.jsx';
 
 const FIELD_LABELS = { technology: 'Technology', capacity_mw: 'Capacity (MW)', project_name: 'Project name', planning_authority: 'Planning authority',
   site_location: 'Site location', applicant: 'Applicant', submission_date: 'Submission date', has_storage: 'Storage component',
-  annual_co2e_reduction_t: 'Stated reduction (tCO₂e/year)', annual_energy_mwh: 'Stated energy (MWh/year)' };
+  annual_co2e_reduction_t: 'Stated reduction (tCO₂e/year)', annual_energy_mwh: 'Stated energy (MWh/year)', country: 'Country' };
 // Fields whose scope decides whether the value belongs to this application.
 const SCOPED = ['capacity_mw', 'annual_co2e_reduction_t', 'annual_energy_mwh'];
 const NUMERIC = SCOPED;

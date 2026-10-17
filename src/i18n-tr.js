@@ -133,7 +133,7 @@ export const TR = {
   'Stated reduction (tCO₂e/year)': 'Beyan edilen azaltım (tCO₂e/yıl)', 'Stated energy (MWh/year)': 'Beyan edilen enerji (MWh/yıl)',
   'Stated annual reduction of this project (tCO₂e/year)': 'Bu projenin beyan ettiği yıllık azaltım (tCO₂e/yıl)',
   'Stated impact': 'Beyan edilen etki', 'tCO₂e / day · applicant claim, not verified': 'tCO₂e / gün · başvuru sahibinin beyanı, doğrulanmadı',
-  'not modelled for this project type': 'bu proje türü için modellenmiyor',
+  'not modelled for this project type': 'bu proje türü için modellenmiyor', 'Country': 'Ülke',
   'Place in the live queue': 'Canlı kuyruktaki yeri',
   '≈ #{p} of {n} · carbon lane {l} of {m} · planned review week {w}': '≈ {n} başvuru içinde {p}. · karbon yolunda {m} içinde {l}. · planlanan inceleme haftası {w}',
   'After {a}': '{a} projesinden sonra', 'before {b}': '{b} projesinden önce', 'First in the carbon lane': 'Karbon yolunda ilk sırada',
