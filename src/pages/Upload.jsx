@@ -5,11 +5,34 @@ import { LANE_LABELS, fmt, laneReason } from '../live-data.js';
 import { useT } from '../i18n.jsx';
 
 const FIELD_LABELS = { technology: 'Technology', capacity_mw: 'Capacity (MW)', project_name: 'Project name', planning_authority: 'Planning authority',
-  site_location: 'Site location', applicant: 'Applicant', submission_date: 'Submission date', has_storage: 'Storage component' };
-const TECHNOLOGIES = { solar: 'Solar PV', onshore_wind: 'Onshore wind', battery: 'Battery storage', hydro: 'Hydro', biomass: 'Biomass', tidal: 'Tidal', wave: 'Wave' };
+  site_location: 'Site location', applicant: 'Applicant', submission_date: 'Submission date', has_storage: 'Storage component',
+  annual_co2e_reduction_t: 'Stated reduction (tCO₂e/year)', annual_energy_mwh: 'Stated energy (MWh/year)', country: 'Country' };
+// Fields whose scope decides whether the value belongs to this application.
+const SCOPED = ['capacity_mw', 'annual_co2e_reduction_t', 'annual_energy_mwh'];
+const NUMERIC = SCOPED;
+const TECHNOLOGIES = { solar: 'Solar PV', onshore_wind: 'Onshore wind', battery: 'Battery storage', hydro: 'Hydro', biomass: 'Biomass', tidal: 'Tidal', wave: 'Wave',
+  // Outside the historical model: queued on the stated annual impact
+  heat_pump: 'Heat pump', energy_efficiency: 'Energy efficiency', electrification: 'Electrification', ev_charging: 'EV charging',
+  building_retrofit: 'Building retrofit', low_carbon_transport: 'Low-carbon transport', carbon_capture: 'Carbon capture', digital_service: 'Digital service' };
 const CATEGORY = { solar: 'solar', onshore_wind: 'onshore_wind', battery: 'storage', biomass: 'bioenergy_waste', hydro: 'other_renewable', tidal: 'other_renewable', wave: 'other_renewable' };
 const STATUS = { NEEDS_REVIEW: 'Needs human review', READY: 'Ready for review', SCORED: 'Scored', FAILED: 'Failed' };
 const SCOPE = { existing_project: 'existing project', neighbouring_project: 'neighbouring project', grid_connection: 'grid connection', unknown: 'unknown scope' };
+
+// Where a scored application would sit in the live snapshot: carbon-lane files are ordered by
+// (1 − withdrawal) × daily tCO₂e ÷ effort, the same score the queue engine uses.
+function livePlacement(live, app) {
+  const central = app.carbon?.daily_tco2?.central, hours = app.effort?.reviewer_hours;
+  if (!live || central == null || !hours) return null;
+  const score = (1 - (app.prediction?.withdrawal_probability_12m || 0)) * central / hours;
+  const ranked = live.files.filter(f => f.lane === 'carbon' && f.daily_tco2 && f.effort_hours)
+    .map(f => ({ f, s: (1 - (f.p_withdraw_12m || 0)) * f.daily_tco2.central / f.effort_hours }))
+    .sort((a, b) => b.s - a.s);
+  const index = ranked.findIndex(x => x.s < score), slot = index < 0 ? ranked.length : index;
+  const above = ranked[slot - 1]?.f, below = ranked[slot]?.f;
+  return { lanePosition: slot + 1, laneTotal: ranked.length + 1, above, below,
+    position: below ? below.position.carbonqueue : above ? above.position.carbonqueue + 1 : 1,
+    total: live.files.length + 1, week: (below || above)?.planned_week?.carbonqueue || 1 };
+}
 
 function Card({ title, value, note, tone }) {
   return <div className="bg-surface-container-low p-space-md rounded-lg flex flex-col">
@@ -34,7 +57,7 @@ export default function Upload() {
   }
   async function correct(e) {
     e.preventDefault();
-    const values = Object.fromEntries(Object.entries(edits).filter(([, v]) => v !== '').map(([k, v]) => [k, k === 'capacity_mw' ? Number(v) : v]));
+    const values = Object.fromEntries(Object.entries(edits).filter(([, v]) => v !== '').map(([k, v]) => [k, NUMERIC.includes(k) ? Number(v) : v]));
     if (!Object.keys(values).length) return;
     try { setApp(await api.correct(app.application_id, app.revision, values, 'Confirmed by reviewer from source documents')); setEdits({}); ctx.setNotice(t('Correction recorded with audit trail.')); } catch (err) { fail(err); }
   }
@@ -48,8 +71,11 @@ export default function Upload() {
   }
 
   const readiness = app?.readiness, features = app?.project_features;
+  const placement = app?.carbon && livePlacement(ctx.live.status === 'ready' ? ctx.live.data : null, app);
   const docName = Object.fromEntries((app?.documents || []).map(d => [d.document_id, d.filename]));
-  const required = ['technology', 'capacity_mw'].filter(f => readiness?.missing_fields.includes(f) || readiness?.low_confidence_fields.includes(f) || readiness?.conflicts.some(c => c.field === f));
+  // The impact comes from the applicant's own figure only when a claim was used, not when a capacity was.
+  const claimBased = readiness?.domain_status === 'CLAIM_BASED' && /beyani/i.test(app?.carbon?.methodology_reference || '');
+  const required = ['technology', 'capacity_mw', 'annual_co2e_reduction_t'].filter(f => readiness?.missing_fields.includes(f) || readiness?.low_confidence_fields.includes(f) || readiness?.conflicts.some(c => c.field === f));
   const entryReason = entry && features && laneReason({
     lane: entry.lane, capacity: features.capacity_mw, carbon: app.carbon?.daily_tco2?.central, effort: app.effort?.reviewer_hours,
     category: app.carbon?.daily_tco2 ? CATEGORY[features.technology] : CATEGORY[features.technology] === 'solar' || CATEGORY[features.technology] === 'onshore_wind' ? 'capacity not stated' : CATEGORY[features.technology],
@@ -101,8 +127,8 @@ export default function Upload() {
           <div className="overflow-x-auto"><table className="w-full text-left text-body-sm">
             <thead><tr className="text-on-surface-variant uppercase font-label-xs text-label-xs"><th className="py-2 pr-3">{t('Field')}</th><th className="pr-3">{t('Value')}</th><th className="pr-3">{t('Confidence')}</th><th>{t('Evidence')}</th></tr></thead>
             <tbody className="divide-y divide-surface-container">{app.observations.map((o, i) => <tr key={i}>
-              <td className="py-2 pr-3 font-medium">{t(FIELD_LABELS[o.field] || o.field)}{o.field === 'capacity_mw' && o.capacity_scope && o.capacity_scope !== 'proposed_project' && <div className="text-error text-[11px]">{t(SCOPE[o.capacity_scope] || o.capacity_scope)}: {t('not used')}</div>}</td>
-              <td className="pr-3 font-mono">{String(o.value)}{o.unit ? ` ${o.unit}` : ''}</td>
+              <td className="py-2 pr-3 font-medium">{t(FIELD_LABELS[o.field] || o.field)}{SCOPED.includes(o.field) && o.capacity_scope && o.capacity_scope !== 'proposed_project' && <div className="text-error text-[11px]">{t(SCOPE[o.capacity_scope] || o.capacity_scope)}: {t('not used')}</div>}</td>
+              <td className="pr-3 font-mono">{o.field === 'technology' && TECHNOLOGIES[o.value] ? t(TECHNOLOGIES[o.value]) : String(o.value)}{o.unit ? ` ${o.unit}` : ''}</td>
               <td className="pr-3">{fmt(o.confidence * 100, 0)}%</td>
               <td className="text-on-surface-variant">{o.evidence.map((ev, j) => <div key={j}><span className="font-mono text-on-surface">{docName[ev.document_id] || t('document')}{ev.page ? ` · ${t('p.')}${ev.page}` : ''}</span>{ev.quote && <div className="italic pl-2 border-l-2 border-outline-variant/40">“{ev.quote}”</div>}</div>)}</td>
             </tr>)}</tbody>
@@ -110,18 +136,25 @@ export default function Upload() {
           {required.length > 0 && <form onSubmit={correct} className="p-space-md rounded-lg bg-surface-container-low flex flex-wrap items-end gap-space-md">
             <div className="w-full font-label-md text-label-md font-semibold text-on-surface">{t('Human confirmation needed')}</div>
             {required.includes('technology') && <label className="flex flex-col text-body-sm">{t('Technology')}<select value={edits.technology || ''} onChange={e => setEdits(v => ({ ...v, technology: e.target.value }))} className="bg-surface-container-lowest rounded px-2 py-1"><option value="">{t('Select…')}</option>{Object.entries(TECHNOLOGIES).map(([k, label]) => <option key={k} value={k}>{t(label)}</option>)}</select></label>}
+            {required.includes('annual_co2e_reduction_t') && <label className="flex flex-col text-body-sm">{t('Stated annual reduction of this project (tCO₂e/year)')}<input type="number" min="0.01" step="0.01" value={edits.annual_co2e_reduction_t || ''} onChange={e => setEdits(v => ({ ...v, annual_co2e_reduction_t: e.target.value }))} className="bg-surface-container-lowest rounded px-2 py-1" /></label>}
             {required.includes('capacity_mw') && <label className="flex flex-col text-body-sm">{t('Capacity of the proposed project (MW)')}<input type="number" min="0.01" step="0.01" value={edits.capacity_mw || ''} onChange={e => setEdits(v => ({ ...v, capacity_mw: e.target.value }))} className="bg-surface-container-lowest rounded px-2 py-1" /></label>}
             <button className="px-space-md py-1.5 bg-primary text-on-primary rounded font-label-md text-label-md">{t('Record correction')}</button>
           </form>}
           {(app.status === 'READY' || app.status === 'SCORED') && <div className="p-space-md rounded-lg bg-surface-container-low flex flex-col gap-space-sm">
             {!app.carbon && <button className="self-start px-space-lg py-2 bg-primary text-on-primary font-label-md text-label-md font-semibold rounded shadow-md disabled:opacity-40" disabled={phase === 'scoring'} onClick={score}>{t(phase === 'scoring' ? 'Scoring…' : 'Score with model and queue engine')}</button>}
             {app.carbon && <div className="grid grid-cols-2 md:grid-cols-4 gap-space-sm">
-              <Card title={t('Displaced emissions')} value={app.carbon.daily_tco2 ? `${fmt(app.carbon.daily_tco2.low)}–${fmt(app.carbon.daily_tco2.high)}` : t('Unscored')} note={app.carbon.daily_tco2 ? t('tCO₂e / day') : t('No generation-carbon estimate for this technology')} />
+              <Card title={t(claimBased ? 'Stated impact' : 'Displaced emissions')} value={!app.carbon.daily_tco2 ? t('Unscored') : app.carbon.daily_tco2.low === app.carbon.daily_tco2.high ? fmt(app.carbon.daily_tco2.central) : `${fmt(app.carbon.daily_tco2.low)}–${fmt(app.carbon.daily_tco2.high)}`} note={!app.carbon.daily_tco2 ? t('No generation-carbon estimate for this technology') : claimBased ? t('tCO₂e / day · applicant claim, not verified') : t('tCO₂e / day')} />
               <Card title={t('Review effort')} value={`${fmt(app.effort.reviewer_hours, 0)} ${t('h')}`} />
-              <Card title={t('Withdrawal, 12 mo')} value={`${fmt(app.prediction.withdrawal_probability_12m * 100)}%`} />
-              <Card title={t('No decision in 12 mo')} value={`${fmt(app.prediction.decision_distribution[12] * 100, 0)}%`} note={t('current process, model estimate')} />
+              <Card title={t('Withdrawal, 12 mo')} value={app.prediction ? `${fmt(app.prediction.withdrawal_probability_12m * 100)}%` : '—'} note={app.prediction ? null : t('not modelled for this project type')} />
+              <Card title={t('No decision in 12 mo')} value={app.prediction ? `${fmt(app.prediction.decision_distribution[12] * 100, 0)}%` : '—'} note={t(app.prediction ? 'current process, model estimate' : 'not modelled for this project type')} />
             </div>}
             {entry && <p className="font-body-sm text-body-sm text-on-surface"><strong>{t(LANE_LABELS[entry.lane] || entry.lane)}:</strong> {entryReason}</p>}
+            {placement && <div className="flex flex-col gap-1 pt-space-sm border-t border-outline-variant/30">
+              <span className="font-label-xs text-label-xs text-on-surface-variant uppercase tracking-wider font-semibold">{t('Place in the live queue')}</span>
+              <span className="font-title-sm text-title-sm text-on-surface">{t('≈ #{p} of {n} · carbon lane {l} of {m} · planned review week {w}', { p: placement.position, n: placement.total, l: placement.lanePosition, m: placement.laneTotal, w: placement.week })}</span>
+              <span className="font-body-sm text-body-sm text-on-surface-variant">{placement.above ? t('After {a}', { a: placement.above.site_name }) : t('First in the carbon lane')}{placement.below ? ' · ' + t('before {b}', { b: placement.below.site_name }) : ''}</span>
+              <span className="font-label-xs text-label-xs text-on-surface-variant">{t('Same score as the queue engine, compared with the live snapshot of {d}; the next queue run confirms the exact place.', { d: ctx.live.data.as_of })}</span>
+            </div>}
           </div>}
         </>}
       </div>

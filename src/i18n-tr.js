@@ -128,6 +128,18 @@ export const TR = {
   'Review effort': 'İnceleme eforu', 'Withdrawal, 12 mo': 'Geri çekilme, 12 ay', 'No decision in 12 mo': '12 ayda karar çıkmama',
   'current process, model estimate': 'mevcut işleyiş, model tahmini',
   'Historical model unavailable for this project category.': 'Bu proje kategorisi için geçmiş model yok.',
+  // Claim-based projects (outside the historical model)
+  "Outside the historical model: queued on the applicant's stated annual impact or the country's published factors.": 'Geçmiş modelin kapsamı dışında: başvurunun beyan ettiği yıllık etkiyle ya da ülkenin yayımlanmış faktörleriyle kuyruğa alındı.',
+  'Stated reduction (tCO₂e/year)': 'Beyan edilen azaltım (tCO₂e/yıl)', 'Stated energy (MWh/year)': 'Beyan edilen enerji (MWh/yıl)',
+  'Stated annual reduction of this project (tCO₂e/year)': 'Bu projenin beyan ettiği yıllık azaltım (tCO₂e/yıl)',
+  'Stated impact': 'Beyan edilen etki', 'tCO₂e / day · applicant claim, not verified': 'tCO₂e / gün · başvuru sahibinin beyanı, doğrulanmadı',
+  'not modelled for this project type': 'bu proje türü için modellenmiyor', 'Country': 'Ülke',
+  'Place in the live queue': 'Canlı kuyruktaki yeri',
+  '≈ #{p} of {n} · carbon lane {l} of {m} · planned review week {w}': '≈ {n} başvuru içinde {p}. · karbon yolunda {m} içinde {l}. · planlanan inceleme haftası {w}',
+  'After {a}': '{a} projesinden sonra', 'before {b}': '{b} projesinden önce', 'First in the carbon lane': 'Karbon yolunda ilk sırada',
+  'Same score as the queue engine, compared with the live snapshot of {d}; the next queue run confirms the exact place.': 'Kuyruk motoruyla aynı skor, {d} tarihli canlı kuyrukla karşılaştırıldı; kesin yer bir sonraki kuyruk çalıştırmasında belirlenir.',
+  'Heat pump': 'Isı pompası', 'Energy efficiency': 'Enerji verimliliği', 'Electrification': 'Elektrifikasyon', 'EV charging': 'Elektrikli araç şarjı',
+  'Building retrofit': 'Bina yenileme', 'Low-carbon transport': 'Düşük karbonlu ulaşım', 'Carbon capture': 'Karbon yakalama', 'Digital service': 'Dijital hizmet',
 
   // Results
   'RESULTS': 'SONUÇLAR', 'Performance overview': 'Performans özeti',
