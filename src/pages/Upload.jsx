@@ -73,7 +73,8 @@ export default function Upload() {
   const readiness = app?.readiness, features = app?.project_features;
   const placement = app?.carbon && livePlacement(ctx.live.status === 'ready' ? ctx.live.data : null, app);
   const docName = Object.fromEntries((app?.documents || []).map(d => [d.document_id, d.filename]));
-  const claimBased = readiness?.domain_status === 'CLAIM_BASED';
+  // The impact comes from the applicant's own figure only when a claim was used, not when a capacity was.
+  const claimBased = readiness?.domain_status === 'CLAIM_BASED' && /beyani/i.test(app?.carbon?.methodology_reference || '');
   const required = ['technology', 'capacity_mw', 'annual_co2e_reduction_t'].filter(f => readiness?.missing_fields.includes(f) || readiness?.low_confidence_fields.includes(f) || readiness?.conflicts.some(c => c.field === f));
   const entryReason = entry && features && laneReason({
     lane: entry.lane, capacity: features.capacity_mw, carbon: app.carbon?.daily_tco2?.central, effort: app.effort?.reviewer_hours,

@@ -129,7 +129,7 @@ export const TR = {
   'current process, model estimate': 'mevcut işleyiş, model tahmini',
   'Historical model unavailable for this project category.': 'Bu proje kategorisi için geçmiş model yok.',
   // Claim-based projects (outside the historical model)
-  "Outside the historical model: queued on the applicant's stated annual impact.": 'Geçmiş modelin kapsamı dışında: başvurunun beyan ettiği yıllık etkiyle kuyruğa alındı.',
+  "Outside the historical model: queued on the applicant's stated annual impact or the country's published factors.": 'Geçmiş modelin kapsamı dışında: başvurunun beyan ettiği yıllık etkiyle ya da ülkenin yayımlanmış faktörleriyle kuyruğa alındı.',
   'Stated reduction (tCO₂e/year)': 'Beyan edilen azaltım (tCO₂e/yıl)', 'Stated energy (MWh/year)': 'Beyan edilen enerji (MWh/yıl)',
   'Stated annual reduction of this project (tCO₂e/year)': 'Bu projenin beyan ettiği yıllık azaltım (tCO₂e/yıl)',
   'Stated impact': 'Beyan edilen etki', 'tCO₂e / day · applicant claim, not verified': 'tCO₂e / gün · başvuru sahibinin beyanı, doğrulanmadı',
