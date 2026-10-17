@@ -4,6 +4,7 @@ import { queueSortLabels } from '../queue-sort.js';
 import { useHistorical } from '../api.js';
 import { LIVE_POLICIES, TECH, fmt } from '../live-data.js';
 import { useT } from '../i18n.jsx';
+import Compare from './Compare.jsx';
 import { LIVE_COUNTRY, countryName } from '../countries.js';
 
 const REFERENCE_YEAR = 2023;
@@ -128,7 +129,7 @@ export default function Queue() {
       </div>
       <div className="queue-toolbar-actions"><button className="queue-control" aria-expanded={policyOpen} aria-controls="policy-options" onClick={()=>setPolicyOpen(!policyOpen)}><span className="material-symbols-outlined">tune</span>{t('Review policy')}: {t(LIVE_POLICIES[ctx.policy].label)}<span className="material-symbols-outlined">{policyOpen?'expand_less':'expand_more'}</span></button>
       <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded">
-        {[['table','table_rows','Table view'],['gantt','timeline','Planned weeks']].map(([key, icon, label]) => <button key={key} type="button" aria-pressed={ctx.view===key} onClick={() => ctx.setView(key)} className={"px-space-sm py-1 rounded font-label-xs text-label-xs flex items-center gap-1 "+(ctx.view===key?'bg-white shadow-xs text-on-surface font-semibold':'text-on-surface-variant hover:text-on-surface font-medium')}>
+        {[['table','table_rows','Table view'],['gantt','timeline','Planned weeks'],['compare','compare_arrows','Compare with FIFO']].map(([key, icon, label]) => <button key={key} type="button" aria-pressed={ctx.view===key} onClick={() => ctx.setView(key)} className={"px-space-sm py-1 rounded font-label-xs text-label-xs flex items-center gap-1 "+(ctx.view===key?'bg-white shadow-xs text-on-surface font-semibold':'text-on-surface-variant hover:text-on-surface font-medium')}>
           <span className="material-symbols-outlined text-[16px]">{icon}</span>{t(label)}
         </button>)}
       </div>
@@ -140,7 +141,7 @@ export default function Queue() {
       <p className="font-body-sm text-body-sm text-on-surface-variant">{t('The withdrawal and effort steps of the ablation are compared in Results → Historical analysis.')}</p>
     </div>)}
     <div className="queue-explanation-bar"><span>{ctx.sort ? t(queueSortLabels[ctx.sort.key])+' · '+t(ctx.sort.direction==='desc'?'Descending':'Ascending') : t('Ordered by {p}', { p: t(LIVE_POLICIES[ctx.policy].label) })}</span><div>{ctx.sort&&<button className="queue-control" onClick={()=>ctx.setSort(null)}>{t('Reset order')}</button>}<button className="queue-control" aria-expanded={whyOpen} aria-controls="queue-explanation" onClick={()=>setWhyOpen(!whyOpen)}><span className="material-symbols-outlined">psychology_alt</span>{t('Why this queue?')}<span className="material-symbols-outlined">{whyOpen?'chevron_right':'chevron_left'}</span></button></div></div>
-    <div className={'queue-layout '+(whyOpen?'with-explanation':'')}>
+    {ctx.view === 'compare' ? <Compare /> : <div className={'queue-layout '+(whyOpen?'with-explanation':'')}>
       <div className="min-w-0 bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
         <div className="overflow-x-auto">
           <table className="queue-table w-full text-left border-collapse">
@@ -187,6 +188,6 @@ export default function Queue() {
           <p className="font-body-sm text-[12px] leading-snug text-on-surface-variant">{t('Records pending for many years. They are kept out of the ranking until the authority confirms their status.')}</p>
         </div>}
       </aside>}
-    </div>
+    </div>}
   </div>
 </div>); }

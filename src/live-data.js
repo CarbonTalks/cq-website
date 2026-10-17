@@ -48,7 +48,8 @@ export function toRow(record) {
     capacity: record.generation_mw ?? 0,
     hasStorage: Boolean(record.has_storage),
     carbon: band ? [band.low, band.central, band.high] : null,
-    risk: Math.round((record.p_withdraw_12m ?? 0) * 1000) / 10,
+    // No validated model for this country or type: unknown, never shown as 0%.
+    risk: record.p_withdraw_12m == null ? null : Math.round(record.p_withdraw_12m * 1000) / 10,
     effort: record.effort_hours,
     wait: record.wait_days,
     submitted: record.submitted,

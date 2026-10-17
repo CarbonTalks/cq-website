@@ -22,7 +22,7 @@ export function QueueRows() {
         <td className="px-3 whitespace-nowrap"><span className="inline-flex items-center gap-1 bg-surface-container px-2 py-1 rounded"><Icon>{p.icon}</Icon>{t(p.tech)}</span></td>
         <td className="px-3 whitespace-nowrap text-right font-mono">{p.capacity ? `${fmt(p.capacity)} MW` : '—'}</td>
         <td className="px-3 whitespace-nowrap text-right">{p.carbon ? <><strong className="font-mono">{fmt(p.carbon[0], p.carbon[2] < 1 ? 2 : 1)}–{fmt(p.carbon[2], p.carbon[2] < 1 ? 2 : 1)}</strong> <small>{t('tCO₂e/day')}</small></> : <span className="text-on-surface-variant">{t('Unscored')}</span>}</td>
-        <td className="px-3 text-center"><strong>{fmt(p.risk)}%</strong><div className="h-1.5 bg-surface-container-highest rounded w-10 mx-auto mt-1"><div className="bg-secondary h-full rounded" style={{width: `${Math.min(p.risk * 5, 100)}%`}} /></div></td>
+        <td className="px-3 text-center">{p.risk == null ? <span className="text-on-surface-variant" title={t('No validated prediction model for this country or project type')}>—</span> : <><strong>{fmt(p.risk)}%</strong><div className="h-1.5 bg-surface-container-highest rounded w-10 mx-auto mt-1"><div className="bg-secondary h-full rounded" style={{width: `${Math.min(p.risk * 5, 100)}%`}} /></div></>}</td>
         <td className="px-3 whitespace-nowrap">{fmt(p.effort, 0)} {t('h')}</td>
         <td className="px-3 whitespace-nowrap">{p.wait} {t('days')}</td>
         <td className="px-3">{reasonFor(p, policyKey).text}</td>
