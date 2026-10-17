@@ -155,6 +155,13 @@ export default function Upload() {
             {required.includes('capacity_mw') && <label className="flex flex-col text-body-sm">{t('Capacity of the proposed project (MW)')}<input type="number" min="0.01" step="0.01" value={edits.capacity_mw || ''} onChange={e => setEdits(v => ({ ...v, capacity_mw: e.target.value }))} className="bg-surface-container-lowest rounded px-2 py-1" /></label>}
             <button className="px-space-md py-1.5 bg-primary text-on-primary rounded font-label-md text-label-md">{t('Record correction')}</button>
           </form>}
+          {app.corrections?.length > 0 && <div className="p-space-md rounded-lg border border-outline-variant/40 flex flex-col gap-1">
+            <span className="font-label-xs text-label-xs uppercase tracking-wider text-on-surface-variant font-semibold">{t('Audit trail')}</span>
+            {app.corrections.map((c, i) => <div key={i} className="font-body-sm text-body-sm text-on-surface">
+              <strong>{t(FIELD_LABELS[c.field] || c.field)}</strong>: {t('documents said {v}', { v: c.original_values.map(String).join(' / ') || '—' })} → <strong>{String(c.corrected_value)}</strong>
+              <span className="text-on-surface-variant"> · {c.actor} · {new Date(c.changed_at).toLocaleString()}{c.reason ? ` · ${t(c.reason)}` : ''}</span>
+            </div>)}
+          </div>}
           {(app.status === 'READY' || app.status === 'SCORED') && <div className="p-space-md rounded-lg bg-surface-container-low flex flex-col gap-space-sm">
             {!app.carbon && <button className="self-start px-space-lg py-2 bg-primary text-on-primary font-label-md text-label-md font-semibold rounded shadow-md disabled:opacity-40" disabled={phase === 'scoring'} onClick={score}>{t(phase === 'scoring' ? 'Scoring…' : 'Score with model and queue engine')}</button>}
             {app.carbon && <div className="grid grid-cols-2 md:grid-cols-4 gap-space-sm">

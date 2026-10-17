@@ -245,4 +245,7 @@ export const TR = {
   "Daily tCO₂e of the projects already reviewed, by reviewer hours spent. Both lines end at the same point: the difference is how early the impact is reached.": "İncelemesi biten projelerin günlük tCO₂e toplamı, harcanan uzman saatine göre. İki çizgi aynı noktada biter; fark, etkiye ne kadar erken ulaşıldığıdır.",
   "No validated prediction model for this country or project type": "Bu ülke ya da proje türü için doğrulanmış tahmin modeli yok",
   "No validated model": "Doğrulanmış model yok",
+  "Audit trail": "Denetim kaydı",
+  "documents said {v}": "belgelerde {v}",
+  "Confirmed by reviewer from source documents": "Uzman kaynak belgelerden teyit etti",
 };
