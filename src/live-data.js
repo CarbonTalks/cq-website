@@ -8,6 +8,15 @@ export const TECH = {
   bioenergy_waste: { label: 'Bioenergy / waste', icon: 'compost' },
   other_renewable: { label: 'Other renewable', icon: 'water_drop' },
 };
+// Uploaded projects outside the REPD categories (category claim_based) are shown by their technology.
+const UPLOAD_TECH = {
+  heat_pump: { label: 'Heat pump', icon: 'heat_pump' }, energy_efficiency: { label: 'Energy efficiency', icon: 'bolt' },
+  electrification: { label: 'Electrification', icon: 'electric_bolt' }, ev_charging: { label: 'EV charging', icon: 'ev_station' },
+  building_retrofit: { label: 'Building retrofit', icon: 'home_work' }, low_carbon_transport: { label: 'Low-carbon transport', icon: 'directions_bus' },
+  carbon_capture: { label: 'Carbon capture', icon: 'co2' }, digital_service: { label: 'Digital service', icon: 'devices' },
+  hydro: { label: 'Hydro', icon: 'water_drop' }, biomass: { label: 'Biomass', icon: 'compost' }, tidal: { label: 'Tidal', icon: 'waves' },
+  wave: { label: 'Wave', icon: 'waves' }, battery: { label: 'Battery storage', icon: 'battery_charging_full' },
+};
 
 // Policies available in the live snapshot. Index order is used by settings and policy tabs.
 export const LIVE_POLICIES = [
@@ -25,7 +34,7 @@ export const LANE_LABELS = {
 };
 
 export function toRow(record) {
-  const tech = TECH[record.category] || { label: record.technology || record.category, icon: 'bolt' };
+  const tech = TECH[record.category] || UPLOAD_TECH[record.technology] || { label: record.technology || record.category, icon: 'bolt' };
   const band = record.daily_tco2;
   return {
     id: record.app_id,
@@ -39,7 +48,8 @@ export function toRow(record) {
     capacity: record.generation_mw ?? 0,
     hasStorage: Boolean(record.has_storage),
     carbon: band ? [band.low, band.central, band.high] : null,
-    risk: Math.round((record.p_withdraw_12m ?? 0) * 1000) / 10,
+    // No validated model for this country or type: unknown, never shown as 0%.
+    risk: record.p_withdraw_12m == null ? null : Math.round(record.p_withdraw_12m * 1000) / 10,
     effort: record.effort_hours,
     wait: record.wait_days,
     submitted: record.submitted,
@@ -47,8 +57,14 @@ export function toRow(record) {
     lane: record.lane,
     position: record.position || {},
     plannedWeek: record.planned_week || {},
+    // Impact from the applicant's own statement (not verified by the authority).
+    statedImpact: Boolean(record.stated_impact),
   };
 }
+
+// A stated (unverified) impact that lifts a file into the first fifth of the queue is shown to the
+// reviewer as needing a check before review: inflating a claim must not buy an early place unnoticed.
+export const needsClaimCheck = (p, total) => p.statedImpact && p.position?.carbonqueue <= Math.max(1, Math.ceil(total * 0.2));
 
 export const fmt = (value, digits = 1) =>
   value == null || Number.isNaN(value) ? '—' : Number(value).toLocaleString(locale(), { maximumFractionDigits: digits, minimumFractionDigits: 0 });

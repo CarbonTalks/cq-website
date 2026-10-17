@@ -4,6 +4,8 @@ import { queueSortLabels } from '../queue-sort.js';
 import { useHistorical } from '../api.js';
 import { LIVE_POLICIES, TECH, fmt } from '../live-data.js';
 import { useT } from '../i18n.jsx';
+import Compare from './Compare.jsx';
+import { LIVE_COUNTRY, countryName } from '../countries.js';
 
 const REFERENCE_YEAR = 2023;
 
@@ -40,6 +42,7 @@ export default function Queue() {
   const gain = cq?.carbon_gain_tco2_vs_fifo;
   const capacity = live?.calibration?.capacity_hours_per_week;
   const lanes = live?.lane_counts || {};
+  const uploaded = ctx.country !== LIVE_COUNTRY;
   return (<div className="flex flex-col w-full text-on-surface antialiased pb-space-xl">
   <div className="px-gutter-desktop pt-space-lg pb-space-md flex flex-col gap-space-md border-b border-outline-variant/30 bg-surface-container-lowest">
     <div className="flex flex-wrap items-center justify-between gap-y-space-md">
@@ -52,7 +55,7 @@ export default function Queue() {
           </span>
         </div>
         <p className="font-body-md text-body-md text-on-surface-variant">
-          {t('Review order for pending English renewable applications')}{live ? t(', snapshot {d}', { d: live.as_of }) : ''}. {t('Decision support only: CarbonQueue does not approve or refuse applications.')}
+          {uploaded ? t('Review order for the applications uploaded for {c}', { c: countryName(ctx.country) }) : t('Review order for pending English renewable applications')}{live ? t(uploaded ? ', as of {d}' : ', snapshot {d}', { d: live.as_of }) : ''}. {t('Decision support only: CarbonQueue does not approve or refuse applications.')}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-space-lg">
@@ -61,7 +64,7 @@ export default function Queue() {
             <span className="text-on-surface-variant font-medium">{t('Weekly reviewer capacity')}</span>
             <span className="font-semibold text-on-surface">{capacity ? `${fmt(capacity, 0)} ${t('h')}` : '—'}</span>
           </div>
-          <span className="font-label-xs text-[10px] leading-3 text-on-surface-variant/80">{t('Calibrated to observed decision times')}</span>
+          <span className="font-label-xs text-[10px] leading-3 text-on-surface-variant/80">{t(uploaded ? 'England 2023 calibration, until local data' : 'Calibrated to observed decision times')}</span>
         </div>
         <div className="flex items-center gap-space-sm">
           <button className="inline-flex items-center gap-space-xs px-space-md py-space-sm rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors shadow-xs" type="button" onClick={ctx.exportCsv} disabled={!live}>
@@ -81,13 +84,13 @@ export default function Queue() {
       <Kpi label={t('Applications in queue')} icon="fact_check" value={live ? ctx.rows.length : '—'}>
         {live ? t('{c} carbon · {m} max-wait · {s} small-project · {u} unscored · {n} awaiting confirmation', { c: lanes.carbon || 0, m: lanes.max_wait || 0, s: lanes.small_quota || 0, u: lanes.unscored || 0, n: live.needs_confirmation.length }) : '—'}
       </Kpi>
-      <Kpi label={t('Median wait · {y} queue', { y: REFERENCE_YEAR })} icon="hourglass_empty" value={cq ? fmt(cq.wait_days.all.median, 0) : '—'} unit={t('days')}>
+      <Kpi label={t(uploaded ? 'Median wait · England {y}' : 'Median wait · {y} queue', { y: REFERENCE_YEAR })} icon="hourglass_empty" value={cq ? fmt(cq.wait_days.all.median, 0) : '—'} unit={t('days')}>
         {fifo ? t('FIFO {d} days · simulated, same capacity', { d: fmt(fifo.wait_days.all.median, 0) }) : t('Historical simulation')}
       </Kpi>
-      <Kpi label={t('P90 wait · {y} queue', { y: REFERENCE_YEAR })} icon="speed" value={cq ? fmt(cq.wait_days.all.p90, 0) : '—'} unit={t('days')}>
+      <Kpi label={t(uploaded ? 'P90 wait · England {y}' : 'P90 wait · {y} queue', { y: REFERENCE_YEAR })} icon="speed" value={cq ? fmt(cq.wait_days.all.p90, 0) : '—'} unit={t('days')}>
         {fifo ? t('FIFO {d} days · small projects {a} → {b}', { d: fmt(fifo.wait_days.all.p90, 0), a: fmt(fifo.wait_days.small_scored.p90, 0), b: fmt(cq.wait_days.small_scored.p90, 0) }) : t('Historical simulation')}
       </Kpi>
-      <Kpi label={t('Carbon gain vs FIFO · {y}', { y: REFERENCE_YEAR })} icon="eco" value={gain ? fmt(gain['alpha_0.5'].central / 1000, 1) : '—'} unit="ktCO₂e">
+      <Kpi label={t(uploaded ? 'Carbon gain vs FIFO · England {y}' : 'Carbon gain vs FIFO · {y}', { y: REFERENCE_YEAR })} icon="eco" value={gain ? fmt(gain['alpha_0.5'].central / 1000, 1) : '—'} unit="ktCO₂e">
         {gain ? t('Full range {a}–{b} kt · central emission factor, 50% pass-through', { a: fmt(gain['alpha_0.2'].low / 1000, 1), b: fmt(gain['alpha_1.0'].high / 1000, 0) }) : t(history.status === 'error' ? 'Historical results unavailable' : 'Loading…')}
       </Kpi>
     </div>
@@ -126,7 +129,7 @@ export default function Queue() {
       </div>
       <div className="queue-toolbar-actions"><button className="queue-control" aria-expanded={policyOpen} aria-controls="policy-options" onClick={()=>setPolicyOpen(!policyOpen)}><span className="material-symbols-outlined">tune</span>{t('Review policy')}: {t(LIVE_POLICIES[ctx.policy].label)}<span className="material-symbols-outlined">{policyOpen?'expand_less':'expand_more'}</span></button>
       <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded">
-        {[['table','table_rows','Table view'],['gantt','timeline','Planned weeks']].map(([key, icon, label]) => <button key={key} type="button" aria-pressed={ctx.view===key} onClick={() => ctx.setView(key)} className={"px-space-sm py-1 rounded font-label-xs text-label-xs flex items-center gap-1 "+(ctx.view===key?'bg-white shadow-xs text-on-surface font-semibold':'text-on-surface-variant hover:text-on-surface font-medium')}>
+        {[['table','table_rows','Table view'],['gantt','timeline','Planned weeks'],['compare','compare_arrows','Compare with FIFO']].map(([key, icon, label]) => <button key={key} type="button" aria-pressed={ctx.view===key} onClick={() => ctx.setView(key)} className={"px-space-sm py-1 rounded font-label-xs text-label-xs flex items-center gap-1 "+(ctx.view===key?'bg-white shadow-xs text-on-surface font-semibold':'text-on-surface-variant hover:text-on-surface font-medium')}>
           <span className="material-symbols-outlined text-[16px]">{icon}</span>{t(label)}
         </button>)}
       </div>
@@ -138,7 +141,7 @@ export default function Queue() {
       <p className="font-body-sm text-body-sm text-on-surface-variant">{t('The withdrawal and effort steps of the ablation are compared in Results → Historical analysis.')}</p>
     </div>)}
     <div className="queue-explanation-bar"><span>{ctx.sort ? t(queueSortLabels[ctx.sort.key])+' · '+t(ctx.sort.direction==='desc'?'Descending':'Ascending') : t('Ordered by {p}', { p: t(LIVE_POLICIES[ctx.policy].label) })}</span><div>{ctx.sort&&<button className="queue-control" onClick={()=>ctx.setSort(null)}>{t('Reset order')}</button>}<button className="queue-control" aria-expanded={whyOpen} aria-controls="queue-explanation" onClick={()=>setWhyOpen(!whyOpen)}><span className="material-symbols-outlined">psychology_alt</span>{t('Why this queue?')}<span className="material-symbols-outlined">{whyOpen?'chevron_right':'chevron_left'}</span></button></div></div>
-    <div className={'queue-layout '+(whyOpen?'with-explanation':'')}>
+    {ctx.view === 'compare' ? <Compare /> : <div className={'queue-layout '+(whyOpen?'with-explanation':'')}>
       <div className="min-w-0 bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
         <div className="overflow-x-auto">
           <table className="queue-table w-full text-left border-collapse">
@@ -185,6 +188,6 @@ export default function Queue() {
           <p className="font-body-sm text-[12px] leading-snug text-on-surface-variant">{t('Records pending for many years. They are kept out of the ranking until the authority confirms their status.')}</p>
         </div>}
       </aside>}
-    </div>
+    </div>}
   </div>
 </div>); }
