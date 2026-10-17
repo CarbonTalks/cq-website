@@ -45,7 +45,11 @@ Uzman ekranlarında gerçekleşme olasılığı gibi alanlar gösterilmez; backe
 
 ## FIFO ile karşılaştırma
 
-Kuyruk sayfasındaki "FIFO ile karşılaştır" görünümü aynı dosyaları iki sırayla gösterir: solda başvuru sırası, sağda CarbonQueue; yeşil çizgiler öne alınan projeler. Altındaki grafik, harcanan uzman saatine göre incelemesi biten projelerin günlük tCO₂e toplamını iki politika için çizer (iki çizgi aynı noktada biter; fark etkiye ne kadar erken ulaşıldığıdır). Üstteki kartlar: işin ilk üçte birinde incelenen karbon oranı, en büyük üç projenin iki sıradaki yeri, toplam iş (iki politikada aynı). Yan yana liste en fazla 30 başvuru için gösterilir; grafik ve kartlar 765 başvuruluk İngiltere kuyruğunda da çalışır. Renkler (FIFO #2a78d6, CarbonQueue #1baf7a) renk körlüğü doğrulayıcısından geçti; tablo görünümü "Grafik verisini göster" altında.
+Kuyruk sayfasındaki "FIFO ile karşılaştır" görünümü aynı dosyaları iki sırayla gösterir: solda başvuru sırası, sağda CarbonQueue; yeşil çizgiler öne alınan projeler. Altındaki grafik, harcanan uzman saatine göre incelemesi biten projelerin günlük tCO₂e toplamını iki politika için çizer (iki çizgi aynı noktada biter; fark etkiye ne kadar erken ulaşıldığıdır). Üstteki kartlar: işin ilk üçte birinde incelenen karbon oranı, karbon ağırlıklı bekleme (her tCO₂e/gün incelemesine kadar ortalama ne kadar bekliyor; kesim noktası gerektirmez), en büyük üç projenin iki sıradaki yeri, toplam iş (iki politikada aynı). Yan yana liste en fazla 30 başvuru için gösterilir; grafik ve kartlar 765 başvuruluk İngiltere kuyruğunda da çalışır. Renkler (FIFO #2a78d6, CarbonQueue #1baf7a) renk körlüğü doğrulayıcısından geçti; tablo görünümü "Grafik verisini göster" altında.
+
+## İnceleme kuralları
+
+Yükleme sayfasındaki düzeltme formu eksik, çelişkili, düşük güvenli, geçersiz ya da alıntısız her alanı gösterir (teknoloji, kapasite, yıllık azaltım, yıllık üretim). Backend'in `readiness.review_notes` gerekçesi (örn. fiziksel olarak mümkün olmayan kapasite faktörü) metin olarak yazılır. Etkisi başvuru sahibinin beyanından gelen (`stated_impact`) ve CarbonQueue sırasında ilk beşte birde olan dosya kuyrukta ve proje sayfasında "Beyanı kontrol et" ile işaretlenir.
 
 ## Dil
 
