@@ -1,3 +1,4 @@
+import { needsClaimCheck } from '../live-data.js';
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../state.jsx';
 import { api } from '../api.js';

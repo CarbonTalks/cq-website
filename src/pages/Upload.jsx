@@ -10,7 +10,7 @@ const FIELD_LABELS = { technology: 'Technology', capacity_mw: 'Capacity (MW)', p
   annual_co2e_reduction_t: 'Stated reduction (tCO₂e/year)', annual_energy_mwh: 'Stated energy (MWh/year)', country: 'Country' };
 // Fields whose scope decides whether the value belongs to this application.
 const SCOPED = ['capacity_mw', 'annual_co2e_reduction_t', 'annual_energy_mwh'];
-const NUMERIC = SCOPED;
+const NUMERIC = SCOPED;  // capacity and both annual claims are numbers in the correction form
 const TECHNOLOGIES = { solar: 'Solar PV', onshore_wind: 'Onshore wind', battery: 'Battery storage', hydro: 'Hydro', biomass: 'Biomass', tidal: 'Tidal', wave: 'Wave',
   // Outside the historical model: queued on the stated annual impact
   heat_pump: 'Heat pump', energy_efficiency: 'Energy efficiency', electrification: 'Electrification', ev_charging: 'EV charging',
@@ -90,7 +90,9 @@ export default function Upload() {
   const docName = Object.fromEntries((app?.documents || []).map(d => [d.document_id, d.filename]));
   // The impact comes from the applicant's own figure only when a claim was used, not when a capacity was.
   const claimBased = readiness?.domain_status === 'CLAIM_BASED' && /beyani/i.test(app?.carbon?.methodology_reference || '');
-  const required = ['technology', 'capacity_mw', 'annual_co2e_reduction_t'].filter(f => readiness?.missing_fields.includes(f) || readiness?.low_confidence_fields.includes(f) || readiness?.conflicts.some(c => c.field === f));
+  // Every field a reviewer may have to settle: missing, uncertain, conflicting, invalid or without a quote.
+  const flagged = f => ['missing_fields', 'low_confidence_fields', 'invalid_fields', 'unsupported_fields'].some(k => readiness?.[k]?.includes(f)) || readiness?.conflicts.some(c => c.field === f);
+  const required = ['technology', 'capacity_mw', 'annual_co2e_reduction_t', 'annual_energy_mwh'].filter(flagged);
   const entryReason = entry && features && laneReason({
     lane: entry.lane, capacity: features.capacity_mw, carbon: app.carbon?.daily_tco2?.central, effort: app.effort?.reviewer_hours,
     category: app.carbon?.daily_tco2 ? CATEGORY[features.technology] : CATEGORY[features.technology] === 'solar' || CATEGORY[features.technology] === 'onshore_wind' ? 'capacity not stated' : CATEGORY[features.technology],
@@ -139,6 +141,10 @@ export default function Upload() {
             <Card title={t('Missing')} value={readiness.missing_fields.length} note={readiness.missing_fields.map(f => t(FIELD_LABELS[f] || f)).join(', ') || t('none')} tone={readiness.missing_fields.length ? 'bad' : ''} />
           </div>
           {readiness.message && <p className="font-body-sm text-body-sm text-on-surface-variant">{t(readiness.message)}</p>}
+          {(readiness.review_notes || []).map((n, i) => <p key={i} role="note" className="font-body-sm text-body-sm text-error">{n.code === 'implausible_capacity_factor'
+            ? t('Stated annual energy implies a capacity factor of {v}, outside {lo}–{hi} for this technology: check the unit, the period (annual or lifetime) and which plant the figure belongs to.', { v: fmt(n.value, 2), lo: fmt(n.low, 2), hi: fmt(n.high, 2) })
+            : n.code}</p>)}
+          {['invalid_fields', 'unsupported_fields'].some(k => readiness[k]?.length) && <p className="font-body-sm text-body-sm text-on-surface-variant">{t('Needs a reviewer')}: {[...new Set([...readiness.invalid_fields, ...readiness.unsupported_fields])].map(f => t(FIELD_LABELS[f] || f)).join(', ')}</p>}
           <div className="overflow-x-auto"><table className="w-full text-left text-body-sm">
             <thead><tr className="text-on-surface-variant uppercase font-label-xs text-label-xs"><th className="py-2 pr-3">{t('Field')}</th><th className="pr-3">{t('Value')}</th><th className="pr-3">{t('Confidence')}</th><th>{t('Evidence')}</th></tr></thead>
             <tbody className="divide-y divide-surface-container">{app.observations.map((o, i) => <tr key={i}>
@@ -152,6 +158,7 @@ export default function Upload() {
             <div className="w-full font-label-md text-label-md font-semibold text-on-surface">{t('Human confirmation needed')}</div>
             {required.includes('technology') && <label className="flex flex-col text-body-sm">{t('Technology')}<select value={edits.technology || ''} onChange={e => setEdits(v => ({ ...v, technology: e.target.value }))} className="bg-surface-container-lowest rounded px-2 py-1"><option value="">{t('Select…')}</option>{Object.entries(TECHNOLOGIES).map(([k, label]) => <option key={k} value={k}>{t(label)}</option>)}</select></label>}
             {required.includes('annual_co2e_reduction_t') && <label className="flex flex-col text-body-sm">{t('Stated annual reduction of this project (tCO₂e/year)')}<input type="number" min="0.01" step="0.01" value={edits.annual_co2e_reduction_t || ''} onChange={e => setEdits(v => ({ ...v, annual_co2e_reduction_t: e.target.value }))} className="bg-surface-container-lowest rounded px-2 py-1" /></label>}
+            {required.includes('annual_energy_mwh') && <label className="flex flex-col text-body-sm">{t('Stated annual energy of this project (MWh/year)')}<input type="number" min="0.01" step="0.01" value={edits.annual_energy_mwh || ''} onChange={e => setEdits(v => ({ ...v, annual_energy_mwh: e.target.value }))} className="bg-surface-container-lowest rounded px-2 py-1" /></label>}
             {required.includes('capacity_mw') && <label className="flex flex-col text-body-sm">{t('Capacity of the proposed project (MW)')}<input type="number" min="0.01" step="0.01" value={edits.capacity_mw || ''} onChange={e => setEdits(v => ({ ...v, capacity_mw: e.target.value }))} className="bg-surface-container-lowest rounded px-2 py-1" /></label>}
             <button className="px-space-md py-1.5 bg-primary text-on-primary rounded font-label-md text-label-md">{t('Record correction')}</button>
           </form>}

@@ -248,4 +248,14 @@ export const TR = {
   "Audit trail": "Denetim kaydı",
   "documents said {v}": "belgelerde {v}",
   "Confirmed by reviewer from source documents": "Uzman kaynak belgelerden teyit etti",
+  // Review rules and carbon-weighted wait
+  "Stated annual energy implies a capacity factor of {v}, outside {lo}–{hi} for this technology: check the unit, the period (annual or lifetime) and which plant the figure belongs to.": "Beyan edilen yıllık üretim {v} kapasite faktörüne karşılık geliyor; bu teknoloji için {lo}–{hi} aralığının dışında: birimi, dönemi (yıllık mı ömür boyu mu) ve rakamın hangi santrale ait olduğunu kontrol edin.",
+  "Needs a reviewer": "Uzman kontrolü gerekiyor",
+  "Stated annual energy of this project (MWh/year)": "Bu projenin beyan edilen yıllık üretimi/tasarrufu (MWh/yıl)",
+  "The impact comes from the applicant and is not verified; it puts this file in the first fifth of the queue, so check the statement before the review.": "Etki başvuru sahibinin beyanından geliyor ve doğrulanmadı; dosyayı kuyruğun ilk beşte birine taşıdığı için incelemeden önce beyanı kontrol edin.",
+  "Check stated impact": "Beyanı kontrol et",
+  "Carbon-weighted wait": "Karbon ağırlıklı bekleme",
+  "Each tCO₂e/day waits {a} instead of {b} for its review ({u})": "Her tCO₂e/gün incelemesine kadar {b} yerine {a} bekliyor ({u})",
+  "at the calibrated weekly capacity": "kalibre edilmiş haftalık kapasiteyle",
+  "reviewer hours of work before it": "kendisinden önceki uzman saati",
 };

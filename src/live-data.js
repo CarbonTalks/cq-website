@@ -57,8 +57,14 @@ export function toRow(record) {
     lane: record.lane,
     position: record.position || {},
     plannedWeek: record.planned_week || {},
+    // Impact from the applicant's own statement (not verified by the authority).
+    statedImpact: Boolean(record.stated_impact),
   };
 }
+
+// A stated (unverified) impact that lifts a file into the first fifth of the queue is shown to the
+// reviewer as needing a check before review: inflating a claim must not buy an early place unnoticed.
+export const needsClaimCheck = (p, total) => p.statedImpact && p.position?.carbonqueue <= Math.max(1, Math.ceil(total * 0.2));
 
 export const fmt = (value, digits = 1) =>
   value == null || Number.isNaN(value) ? '—' : Number(value).toLocaleString(locale(), { maximumFractionDigits: digits, minimumFractionDigits: 0 });

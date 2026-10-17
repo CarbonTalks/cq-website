@@ -17,6 +17,12 @@ function progress(order) {
   })];
 }
 const carbonBy = (steps, hours) => steps.filter(s => s.hours <= hours + 1e-9).at(-1).carbon;
+// Carbon-weighted wait: reviewer hours spent before each project's review ends, weighted by its daily tCO2e.
+// It needs no cut-off point: how long, on average, each tonne of daily impact waits for its review.
+const carbonWeightedWait = steps => {
+  const total = steps.at(-1).carbon;
+  return total > 0 ? steps.slice(1).reduce((sum, s) => sum + carbonOf(s.p) * s.hours, 0) / total : 0;
+};
 
 function Stat({ label, value, note }) {
   return <div className="bg-surface-container-lowest p-space-md rounded-lg shadow-sm flex flex-col gap-1">
@@ -92,12 +98,19 @@ export default function Compare() {
   const totalHours = fifo.at(-1).hours, totalCarbon = fifo.at(-1).carbon;
   const budget = totalHours / 3;
   const atCq = carbonBy(cq, budget), atFifo = carbonBy(fifo, budget);
+  const waitCq = carbonWeightedWait(cq), waitFifo = carbonWeightedWait(fifo);
+  const capacity = ctx.live.data?.calibration?.capacity_hours_per_week;
+  const inWeeks = capacity && totalHours > capacity;
+  const waitText = h => inWeeks ? `${fmt(h / capacity, 1)} ${t('weeks')}` : `${fmt(h, 0)} ${t('h')}`;
   const biggest = [...rows].sort((a, b) => carbonOf(b) - carbonOf(a)).slice(0, 3).filter(p => carbonOf(p) > 0);
   return <div className="flex flex-col gap-space-md">
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md">
       <Stat label={t('Carbon reviewed in the first third of the work')}
         value={atFifo > 0 ? `×${fmt(atCq / atFifo, 1)}` : fmt(atCq)}
         note={t('CarbonQueue {a} vs FIFO {b} tCO₂e/day after {h} reviewer hours', { a: fmt(atCq), b: fmt(atFifo), h: fmt(budget, 0) })} />
+      <Stat label={t('Carbon-weighted wait')}
+        value={waitFifo > 0 ? `−${fmt((1 - waitCq / waitFifo) * 100, 0)}%` : '—'}
+        note={t('Each tCO₂e/day waits {a} instead of {b} for its review ({u})', { a: waitText(waitCq), b: waitText(waitFifo), u: inWeeks ? t('at the calibrated weekly capacity') : t('reviewer hours of work before it') })} />
       <Stat label={t('Largest projects')}
         value={biggest.map(p => `#${p.position.carbonqueue}`).join(' · ')}
         note={t('Their place under FIFO: {f}', { f: biggest.map(p => `#${p.position.fifo}`).join(' · ') })} />
