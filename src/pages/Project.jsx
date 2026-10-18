@@ -1,3 +1,4 @@
+import { needsClaimCheck } from '../live-data.js';
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../state.jsx';
 import { api } from '../api.js';
@@ -39,7 +40,7 @@ export default function Project() {
   const annual = p.carbon ? [p.carbon[0] * 365 / 1000, p.carbon[2] * 365 / 1000] : null;
   const metrics = [
     {id:'carbon',label:t('Displaced emissions'),value:p.carbon?`${fmt(p.carbon[0])}–${fmt(p.carbon[2])}`:t('Unscored'),unit:p.carbon?t('tCO₂e / day · central {c}',{c:fmt(p.carbon[1])}):t('No generation-carbon estimate for this technology'),description:t('MW × 24 h × load factor (DUKES 2026) × displacement emission factor. Low: grid average, central: long-run marginal (Green Book), high: gas-fired generation. A potential, not a measured saving.')},
-    {id:'withdrawal',label:t('Withdrawal within 12 months'),value:`${fmt(p.risk)}%`,unit:t('Model probability'),description:t('Probability that the applicant withdraws within 12 months (CatBoost model trained on REPD). Not a probability of permission or refusal.'),progress:Math.min(p.risk*5,100)},
+    {id:'withdrawal',label:t('Withdrawal within 12 months'),value:p.risk == null ? '—' : `${fmt(p.risk)}%`,unit:t(p.risk == null ? 'No validated model' : 'Model probability'),description:t('Probability that the applicant withdraws within 12 months (CatBoost model trained on REPD). Not a probability of permission or refusal.'),progress:Math.min(p.risk*5,100)},
     {id:'effort',label:t('Estimated review effort'),value:`${fmt(p.effort,0)} ${t('h')}`,description:t('Rule-based: 4 points base, +2 from 1 MW, +2 more from 20 MW, +2 with a storage component; 1 point = 2 reviewer hours.')},
     {id:'waiting',label:t('Waiting time'),value:`${p.wait} ${t('days')}`,description:t('Submitted {d}. Files waiting over 365 days enter maximum-wait protection.',{d:p.submitted}),progress:Math.min(p.wait/365*100,100)},
   ];
@@ -55,7 +56,7 @@ export default function Project() {
           <h1 className="font-display-lg text-display-lg text-on-surface tracking-tight">{p.name}</h1>
           <div className="flex flex-wrap items-center gap-space-xs font-label-md text-label-md">
             {[t(p.tech), p.capacity ? `${fmt(p.capacity)} MW` : t('Capacity not stated'), p.hasStorage ? t('With storage') : null, p.authority].filter(Boolean).map(x => <span key={x} className="px-2.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-medium">{x}</span>)}
-            <span className="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-mono text-label-xs tracking-wider">REPD {p.id}</span>
+            <span className="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-mono text-label-xs tracking-wider">{ctx.country === 'GB' ? 'REPD' : 'ID'} {p.id}</span>
           </div>
         </div>
         <div className="flex flex-col text-right px-space-xl py-space-md bg-surface-container-low rounded-xl">
