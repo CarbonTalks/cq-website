@@ -41,7 +41,9 @@ function App() {
   useEffect(()=>{if(notice){const timer=setTimeout(()=>setNotice(''),4500);return ()=>clearTimeout(timer);}},[notice]);
   // Great Britain reads the imported REPD live queue; every other country its uploaded applications.
   const country = settings.country || LIVE_COUNTRY;
-  const loadLive = () => { setLive({status:'loading'}); (country===LIVE_COUNTRY?api.liveQueue():api.countryQueue(country)).then(data=>setLive({status:'ready',data})).catch(error=>setLive({status:'error',error})); };
+  // A response for a country the workspace has already left is dropped: otherwise a slower earlier request
+  // (e.g. the default GB queue before the first-launch country choice) overwrites the chosen country's queue.
+  const loadLive = () => { let active=true; setLive({status:'loading'}); (country===LIVE_COUNTRY?api.liveQueue():api.countryQueue(country)).then(data=>active&&setLive({status:'ready',data})).catch(error=>active&&setLive({status:'error',error})); return ()=>{active=false;}; };
   useEffect(loadLive, [country]);
   useEffect(()=>setPageIndex(0), [search, filters, policy, sort]);
   const navigate = r => {location.hash='/'+r;};
